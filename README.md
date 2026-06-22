@@ -6,6 +6,8 @@ combines both DCCA architecture two autoencoders which uses two DNNs to extract
 nonlinear features for each view and the canonical correlation between the extracted 
 features f (X) and g(Y) is maximized. And two encoders minimizing the reconstruction 
 errors.
+
+
 DATA GENERATION:
 Before discussing the implementation of such model to solve the RF signals 
 classification problem, we need to generate training data. To do so we use MATLAB
@@ -17,6 +19,8 @@ Identify 5G, LTE, and WLAN Signals is used to generate dataset.
 Due to the time constraints only a batch of 700 spectrogram images were generated for 
 each class. And therefore, data augmentation techniques were also employed to 
 artificially expand the training set.
+
+
 MODEL ARCHITECTURE:
 The clean spectrogram images are treated as view 1, and the noisy ones fed as the 
 second view. The goal of the DCCAE is to be able to strip away the noise and perfectly 
