@@ -1,0 +1,40 @@
+
+  [~,etmp]=deepnetfwd(X2,FG2tmp,X2); e1=sqrt(etmp/size(X2,1));
+  obj=obj+lambda*etmp/N;
+  [~,etmp]=deepnetfwd(XV2,FG2tmp,XV2); e2=sqrt(etmp/size(XV2,1));
+  if ~isempty(XTe1) && ~isempty(XTe2)
+    [~,etmp]=deepnetfwd(XTe2,FG2tmp,XTe2); e3=sqrt(etmp/size(XTe2,1));
+  else
+    e3=inf;
+  end
+  RE1=[RE1, e1]; RE2=[RE2, e2]; RE3=[RE3, e3];
+  
+  %% Compute objective.
+  obj=obj+l2penalty*sum(VV.^2);
+  OBJ=[OBJ, obj];
+  
+  %% Check learning progress.
+  tmpvalid=-CORR_tune(end)+lambda*(LE2(end)^2+RE2(end)^2);
+  if tmpvalid < optvalid
+    optvalid=tmpvalid;
+    fprintf('DCCAE epoch %d: Objective improved on tuning set!\n',its);
+    F1opt=F1tmp;
+    F2opt=F2tmp;
+    
+    % % %     load MNIST XTe1 trainLabel tuneLabel testLabel
+    % % %     X1proj=gather(deepnetfwd(X1,F1opt));
+    % % %     XV1proj=gather(deepnetfwd(XV1,F1opt));
+    % % %     XTe1proj=gather(deepnetfwd(XTe1,F1opt));
+    % % %     [tuneerr,testerr]=svmclassify(X1proj,trainLabel,XV1proj,tuneLabel,...
+    % % %       XTe1proj,testLabel);
+    % % %     fprintf('DCCAE: tune error rate=%.1f, test error rate=%.1f\n\n',...
+    % % %       100*tuneerr,100*testerr);
+    % % %     clear X1proj XV1proj XTe1proj tuneerr testerr
+    
+  end
+  clear F1tmp F2tmp FG1tmp FG2tmp etmp
+  
+  save(filename,'randseed','its','steps','F1','F2','G1','G2','F1opt','F2opt', ...
+    'TT','eta','delta','optvalid','CORR_train','CORR_tune','CORR_test',...
+    'LE1','LE2','LE3','RE1','RE2','RE3','OBJ');
+end
