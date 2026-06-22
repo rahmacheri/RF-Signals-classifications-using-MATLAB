@@ -1,5 +1,5 @@
 %% 1. Setup the Parameters
-numFrames =700; %700 per class
+numFrames =1000; %1000 per class
 classNames = {'NR', 'LTE', 'WLAN', 'Noise'};
 imageSize = [256 256]; 
 trainDir = 'My_RF_Dataset2'; % Creates a folder in your current directory
