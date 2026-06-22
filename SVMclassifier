@@ -1,0 +1,19 @@
+function [tuneerr, testerr, model] = svmclassify(X_train, Label_train, X_tune, Label_tune, X_test, Label_test)
+
+
+    fprintf('   -> Training  SVM...\n');
+    t = templateSVM('Standardize', true); 
+    model = fitcecoc(X_train, Label_train, 'Learners', t);
+    
+    % 2. Grade the Validation Data 
+    pred_tune = predict(model, X_tune);
+    tuneerr = sum(pred_tune ~= Label_tune) / length(Label_tune);
+    
+    % 3. Grade the Testing Data 
+    if exist('X_test', 'var') && ~isempty(X_test)
+        pred_test = predict(model, X_test);
+        testerr = sum(pred_test ~= Label_test) / length(Label_test);
+    else
+        testerr = 0;
+    end
+end
