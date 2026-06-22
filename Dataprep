@@ -1,0 +1,89 @@
+%% Load_RF_Data.m
+
+% 1. Point to the folder where your 256x256 images were saved
+dataFolder = fullfile(pwd, 'My_RF_Dataset', '256x256'); 
+
+% 2. The classes we are loading (1 = NR, 2 = WLAN, 3 = LTE, 4 = Noise)
+classes = {'NR', 'WLAN', 'LTE', 'Noise'}; 
+
+All_X1 = []; % Will hold View 1 (Clean)
+All_X2 = []; % Will hold View 2 (Noisy)
+All_Labels = []; % Will hold the 1s, 2s, 3s, and 4s
+fprintf('Sweeping the folder for images...\n');
+
+%% 3. Load the Images, Flatten, and Create View 2
+for classIdx = 1:length(classes)
+    className = classes{classIdx};
+    
+    % Find all PNG files for this specific class
+    filePattern = fullfile(dataFolder, sprintf('%s_frame_*.png', className));
+    imageFiles = dir(filePattern);
+    
+    if isempty(imageFiles)
+        fprintf('Warning: No images found for %s! Check your folder path.\n', className);
+        continue;
+    end
+    
+    for i = 1:length(imageFiles)
+        % Read the image
+        imgName = fullfile(dataFolder, imageFiles(i).name);
+        img = imread(imgName);
+        
+        % Convert to Grayscale if needed, and scale to 0-1
+        if size(img, 3) == 3
+            img = rgb2gray(img);
+        end
+        img = double(img) / 255; 
+        
+        % VIEW 1: The Clean Flattened Image
+        flatImg = img(:)'; 
+        All_X1 = [All_X1; flatImg];
+        
+        % VIEW 2: The Noisy Distorted Image (The DCCA Trick)
+        % Adding 30% random static to the image
+        noisyImg = img + (rand(256, 256) * 0.3);
+        noisyImg(noisyImg > 1) = 1; % Keep it within boundaries
+        flatNoisy = noisyImg(:)';
+        All_X2 = [All_X2; flatNoisy];
+        
+        % Label: 1 for NR, 2 for WLAN, 3 for LTE, 4 for Noise
+        All_Labels = [All_Labels; classIdx];
+    end
+    fprintf('Successfully loaded %d %s images.\n', length(imageFiles), className);
+end
+
+%% 4. Shuffle the Deck
+totalImages = size(All_X1, 1);
+fprintf('Total images loaded: %d. Shuffling data...\n', totalImages);
+shuffleIndex = randperm(totalImages); % Generates a random order
+All_X1 = All_X1(shuffleIndex, :);
+All_X2 = All_X2(shuffleIndex, :);
+All_Labels = All_Labels(shuffleIndex, :);
+
+%% 5. The 3-Way Split (70% Train, 15% Validate, 15% Test)
+trainEnd = round(0.70 * totalImages);
+validEnd = round(0.85 * totalImages);
+
+% Training Bucket
+X1 = All_X1(1:trainEnd, :);
+X2 = All_X2(1:trainEnd, :);
+trainLabel = All_Labels(1:trainEnd, :);
+
+% Validation Bucket (Practice Quiz)
+XV1 = All_X1(trainEnd+1:validEnd, :);
+XV2 = All_X2(trainEnd+1:validEnd, :);
+tuneLabel = All_Labels(trainEnd+1:validEnd, :);
+
+% Testing Bucket (Final Exam)
+XTe1 = All_X1(validEnd+1:end, :);
+XTe2 = All_X2(validEnd+1:end, :);
+testLabel = All_Labels(validEnd+1:end, :);
+
+%% 6. Save the Final Output File
+saveName = 'RF_Data.mat';
+fprintf('Splitting complete! Saving to %s...\n', saveName);
+
+save(saveName, 'X1', 'X2', 'trainLabel', 'XV1', 'XV2', 'tuneLabel', ...
+     'XTe1', 'XTe2', 'testLabel', '-v7.3');
+     
+fprintf('Success! Your data is fully prepped for the Neural Network.\n');
