@@ -1,0 +1,32 @@
+%% 1. Setup the Parameters
+numFrames =700; %700 per class
+classNames = {'NR', 'LTE', 'WLAN', 'Noise'};
+imageSize = [256 256]; 
+trainDir = 'My_RF_Dataset2'; % Creates a folder in your current directory
+numSF = 40; % 40 ms duration for each frame
+outFs = 61.44e6; % 61.44 MHz sample rate to capture wideband signals
+
+% Spectrogram options (defaults are fine for now)
+% Spectrogram options (The math used to paint the 2D image)
+tfOpts = struct();
+tfOpts.getTFMap = @(x, sr) abs(stft(x, sr, 'FFTLength', 4096));
+
+% Saving Preferences
+saveChannelInfo = true;  % Save the parameter receipts (.mat)
+saveTimeSignal = false;  % Don't save raw audio data, just the images
+
+%% 2. Start the Factory
+fprintf('Starting data generation. This might take a while...\n');
+
+helperSpecSenseTrainingData(...
+    numFrames, ...
+    classNames, ...
+    imageSize, ...
+    trainDir, ...
+    numSF, ...
+    tfOpts, ...
+    outFs, ...
+    saveChannelInfo, ...
+    saveTimeSignal);
+
+fprintf('Data Generation Complete!\n');
