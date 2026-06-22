@@ -1,0 +1,85 @@
+% Training data are named X1 and X2 for view 1/2.
+% Tuning data are named XV1 and XV2 for view 1/2.
+% Testing data are named XTe1 and XTe2 for view 1/2.
+% All data matrices contains samples rowwise.
+
+
+clear
+load RF_Data_Augmented.mat
+
+% =========================================================================
+X1 = single(X1);
+X2 = single(X2);
+XV1 = single(XV1);
+XV2 = single(XV2);
+XTe1 = single(XTe1);
+XTe2 = single(XTe2);
+
+
+K=4;%equal to the number of output units in the DNN case,
+
+%% Use the seed to reproduce the errors listed below.
+randseed=2446;
+
+
+
+
+
+%% Hyperparameters for DCCAE network architecture.
+% Regularizations for each view.
+rcov1=1e-4; rcov2=1e-4;
+% Hidden activation type.
+hiddentype='sigmoid';
+outputtype='sigmoid';
+% Architecture for view 1 feature extraction network.
+NN1=[1024 1024 1024 K];
+% Architecture for view 2 feature extraction network.
+NN2=[1024 1024 1024  K];
+% Architecture for view 1 reconstruction network.
+NN3=[1024 1024  1024   65536];
+% Architecture for view 2 reconstruction network.
+NN4=[1024 1024  1024  65536];
+% Weight decay parameter.
+l2penalty=1e-4;
+
+%% Run DCCAE with SGD.
+% Reconstruction error term weight.
+lambda=0.001;
+% Minibatchsize for the correlation term.
+cca_batchsize=800;
+% Minibatchsize for reconstruction error term.
+rec_batchsize=100;
+% Learning rate.
+eta0=0.01;
+% Rate in which learning rate decays over iterations.
+% 1 means constant learning rate.
+decay=1;
+% Momentum.
+momentum=0.99;
+% How many passes of the data you run SGD with.
+maxepoch=14;
+addpath ./deepnet/
+% Pretraining is used to speedup autoencoder training.but here we train
+% from scratch
+pretrainnet= [];
+[F1opt,~]=DCCAE_train( ...
+  X1,X2,XV1,XV2,[],[],K,lambda,hiddentype,outputtype,...
+  NN1,NN2,NN3,NN4,rcov1,rcov2,l2penalty, cca_batchsize,rec_batchsize,...
+  eta0,decay,momentum,maxepoch,randseed,pretrainnet);
+% Testing the learned networks.
+X1proj=gather(deepnetfwd(X1,F1opt)); 
+XV1proj=gather(deepnetfwd(XV1,F1opt));
+XTe1proj=gather(deepnetfwd(XTe1,F1opt));
+[tuneerr,testerr, final_svm_model]=svmclassify(X1proj,trainLabel,XV1proj,tuneLabel, XTe1proj,testLabel);
+fprintf('DCCAE: tune error rate=%.1f, test error rate=%.1f\n\n',...
+  100*tuneerr,100*testerr);
+
+fprintf('Overall Test Accuracy = %.1f%%\n', 100 - (100*testerr)); 
+fprintf('========================================\n');
+
+%   (Save to hard drive)
+save('trained_model.mat', 'F1opt', 'final_svm_model');
+
+
+clear X1proj XV1proj XTe1proj tuneerr testerr
+
